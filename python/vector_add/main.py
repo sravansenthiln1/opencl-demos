@@ -63,5 +63,5 @@ cl.enqueue_copy(queue, vec_c, obj_c).wait()
 # Queue event profiling to check execution time
 exec_time = event.profile.end - event.profile.start
 
-print("Execution time in milliseconds =", exec_time / 1e6, "ms")
-print("Execution time in seconds =", exec_time / 1e9, "s")
+print("Execution time in milliseconds =", exec_time / 10e6, "ms")
+print("Execution time in seconds =", exec_time / 10e9, "s")

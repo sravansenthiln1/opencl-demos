@@ -16,5 +16,3 @@ pip3 install numpy pyopencl
 ### Try examples:
 * [C++ implementation](./c++/)
 * [Python implementation](./python/)
-
-
