@@ -40,31 +40,30 @@ print("Input:", input_value[0])
 output = np.array([0], dtype=np.float32)
 
 # Create memory buffers on the device for the weights and biases
-LIN = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, np.float32().nbytes, 
+LIN = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, np.float32().nbytes, 
                                                                                 hostbuf=np.array(input_value, dtype=np.float32))
 
-L1W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
+L1W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
                                                                                 hostbuf=np.array(Layer1Weights, dtype=np.float32))
 
-L1B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
+L1B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
                                                                                 hostbuf=np.array(Layer1Bias, dtype=np.float32))
 
-L2W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, 16 * 16 * np.float32().nbytes, 
+L2W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, 16 * 16 * np.float32().nbytes, 
                                                                                 hostbuf=np.array(Layer2Weights, dtype=np.float32))
 
-L2B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
+L2B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes, 
                                                                                 hostbuf=np.array(Layer2Bias, dtype=np.float32))
 
-L3W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes,
+L3W = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR  | cl.mem_flags.COPY_HOST_PTR, 16 * np.float32().nbytes,
                                                                                 hostbuf=np.array(Layer3Weights, dtype=np.float32))
 
-L3B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, np.float32().nbytes, 
+L3B = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR  | cl.mem_flags.COPY_HOST_PTR, np.float32().nbytes, 
                                                                                 hostbuf=np.array(Layer3Bias, dtype=np.float32))
 
-LOUT = cl.Buffer(context, cl.mem_flags.WRITE_ONLY | cl.mem_flags.COPY_HOST_PTR, np.float32().nbytes, 
-                                                                                hostbuf=output)
+LOUT = cl.Buffer(context, cl.mem_flags.WRITE_ONLY | cl.mem_flags.ALLOC_HOST_PTR, np.float32().nbytes)
 
-tmp = cl.Buffer(context, cl.mem_flags.READ_WRITE, 16 * np.float32().nbytes)
+tmp = cl.Buffer(context, cl.mem_flags.READ_WRITE | cl.mem_flags.ALLOC_HOST_PTR , 16 * np.float32().nbytes)
 
 # Create the OpenCL program, build it, and create the kernels
 kernel_source = cl.Program(context, kernel_str).build()
@@ -89,7 +88,7 @@ L3E2 = Add(queue, (1,), None, tmp, L3B, LOUT)
 queue.finish()
 
 # Read the output from the device
-cl.enqueue_copy(queue, output, LOUT).wait()
+output = cl.enqueue_map_buffer(queue, LOUT, cl.map_flags.READ, 0, (1,), np.float32)
 print("Output:", output[0])
 
 # Release OpenCL resources
@@ -131,5 +130,3 @@ print("layer 2 elapsed time:", L3_exec_time / 10e6, "ms")
 
 total_inference_time = (L1_exec_time + L2_exec_time + L3_exec_time) / 10e6
 print("\nTotal Inference time in:", total_inference_time, "ms")
-
-

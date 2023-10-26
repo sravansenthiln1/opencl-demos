@@ -28,7 +28,6 @@ int main(){
         const int listSize = 1024;
         vector<int> vecA(listSize);
         vector<int> vecB(listSize);
-        vector<int> vecC(listSize);
         for(int i = 0; i < listSize; i++) {
             vecA[i] = i;
             vecB[i] = listSize - i;
@@ -84,9 +83,9 @@ int main(){
 
     // Create memory buffers on the device for each vector and write data to it
 
-        cl::Buffer objA(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, listSize * sizeof(int), vecA.data());
-        cl::Buffer objB(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, listSize * sizeof(int), vecB.data());
-        cl::Buffer objC(context, CL_MEM_READ_WRITE| CL_MEM_USE_HOST_PTR, listSize * sizeof(int), vecC.data());
+        cl::Buffer objA(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, listSize * sizeof(int), vecA.data());
+        cl::Buffer objB(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, listSize * sizeof(int), vecB.data());
+        cl::Buffer objC(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, listSize * sizeof(int));
 
     // create the program, build it and create the cl kernel
 
@@ -112,18 +111,22 @@ int main(){
         queue.enqueueNDRangeKernel(vector_add, cl::NullRange, cl::NDRange(listSize), cl::NullRange, NULL, &event);
         queue.finish();
 
-    // read out of the result buffer into local memory        
-        queue.enqueueReadBuffer(objC, CL_TRUE, 0, listSize * sizeof(int), vecC.data(), NULL, NULL);
+    // get a pointer to map to the result buffer
+
+        cl_int* vecC = (cl_int*)queue.enqueueMapBuffer(objC, CL_TRUE, CL_MAP_READ, 0, listSize * sizeof(int));
 
     // optional: print the result
+    
         //for(int i = 0; i < listSize; i+=100)
         //    printf("%d + %d = %d\n", vecA[i], vecB[i], vecC[i]);
 
     // release buffers and memory objects
+
        queue.finish();
        queue.flush();
 
     // queue event profiling to check execution time 
+
         event.wait();
 
         double exec_time = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -

@@ -87,18 +87,17 @@ int main(){
     // Create memory buffers on the device for the weights and biases
 
         vector<float> input = {M_PI / 4};
-        vector<float> output(1);
-
+        
         cout << "Input value: " << input[0] << endl;
 
-        cl::Buffer LIN(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, 16 * sizeof(float), input.data(), NULL);
-        cl::Buffer L1W(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, 16 * sizeof(float), Layer1Weights.data(), NULL);
-        cl::Buffer L1B(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, 16 * sizeof(float), Layer1Bias.data(), NULL);
-        cl::Buffer L2W(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, 16 * 16 * sizeof(float), Layer2Weights.data(), NULL);
-        cl::Buffer L2B(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, 16 * sizeof(float), Layer2Bias.data(), NULL);
-        cl::Buffer L3W(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, 16 * sizeof(float), Layer3Weights.data(), NULL);
-        cl::Buffer L3B(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float), Layer3Bias.data(), NULL);
-        cl::Buffer LOUT(context, CL_MEM_READ_WRITE, sizeof(float));
+        cl::Buffer LIN(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * sizeof(float), input.data(), NULL);
+        cl::Buffer L1W(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * sizeof(float), Layer1Weights.data(), NULL);
+        cl::Buffer L1B(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * sizeof(float), Layer1Bias.data(), NULL);
+        cl::Buffer L2W(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * 16 * sizeof(float), Layer2Weights.data(), NULL);
+        cl::Buffer L2B(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * sizeof(float), Layer2Bias.data(), NULL);
+        cl::Buffer L3W(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, 16 * sizeof(float), Layer3Weights.data(), NULL);
+        cl::Buffer L3B(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR, sizeof(float), Layer3Bias.data(), NULL);
+        cl::Buffer LOUT(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(float));
 
         cl::Buffer tmp(context, CL_MEM_READ_WRITE, 16 * sizeof(float)); // intermediate buffer
 
@@ -182,14 +181,18 @@ int main(){
         queue.enqueueNDRangeKernel(Add, cl::NullRange, cl::NDRange(1), cl::NullRange, NULL, &L3E2);
         queue.finish();
         
-    queue.enqueueReadBuffer(LOUT, CL_TRUE, 0, sizeof(float), output.data(), NULL, NULL);
-    cout << "output: " << output[0] << endl;
+    // map the output pointer in memory
+    
+        cl_float* output = (cl_float*)queue.enqueueMapBuffer(LOUT, CL_TRUE, CL_MAP_READ, 0, sizeof(float));
+        cout << "output: " << output[0] << endl;
 
     // release buffers and memory objects
+
        queue.finish();
        queue.flush();
 
     // queue event profiling to check execution time 
+
         L1E1.wait();
         L1E2.wait();
         L1E3.wait();

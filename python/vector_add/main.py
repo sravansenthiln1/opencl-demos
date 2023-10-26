@@ -39,9 +39,9 @@ context = cl.Context([device])
 queue = cl.CommandQueue(context, properties=cl.command_queue_properties.PROFILING_ENABLE)
 
 # Create memory buffers on the device
-obj_a = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=vec_a)
-obj_b = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=vec_b)
-obj_c = cl.Buffer(context, cl.mem_flags.WRITE_ONLY, list_size * np.int32().nbytes)
+obj_a = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, hostbuf=vec_a)
+obj_b = cl.Buffer(context, cl.mem_flags.READ_ONLY | cl.mem_flags.ALLOC_HOST_PTR | cl.mem_flags.COPY_HOST_PTR, hostbuf=vec_b)
+obj_c = cl.Buffer(context, cl.mem_flags.WRITE_ONLY | cl.mem_flags.ALLOC_HOST_PTR, list_size * np.int32().nbytes)
 
 # Create the OpenCL program, build it, and create the kernel
 program = cl.Program(context, kernel_str).build()
@@ -53,8 +53,7 @@ local_work_size = None
 event = vector_add(queue, global_work_size, local_work_size, obj_a, obj_b, obj_c)
 
 # Read the result buffer into local memory
-vec_c = np.empty(list_size, dtype=np.int32)
-cl.enqueue_copy(queue, vec_c, obj_c).wait()
+vec_c = cl.enqueue_map_buffer(queue, obj_c, cl.map_flags.READ, 0, vec_a.shape, vec_a.dtype)
 
 # Optional: Print the result
 #for i in range(0, list_size, 100):
